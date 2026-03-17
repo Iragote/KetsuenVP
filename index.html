@@ -166,11 +166,20 @@
     <option value="Pix">Pix</option>
     <option value="Dinheiro">Dinheiro</option>
     <option value="Débito">Cartão de Débito (Taxa 2.79%)</option>
-    <option value="Crédito">Cartão de Crédito (Ver parcelas)</option>
+    <option value="Crédito">Cartão de Crédito (Parcelado)</option>
+    <option value="Misto">Pagamento Misto (Várias formas)</option>
 </select>
 
-<div id="div-parcelas" style="display: none; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px dashed #e60000; margin-bottom: 10px;">
-    <label style="margin-top: 0;">Selecione o Parcelamento:</label>
+<div id="div-misto" style="display: none; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #ffcc00; margin-top: 10px;">
+    <p style="font-size: 0.8rem; color: #fff; margin-bottom: 10px;">Informe quanto pagará em cada opção:</p>
+    <input type="number" id="misto-pix" class="campo-cliente" placeholder="Valor no Pix" oninput="atualizarTotalComTaxa()">
+    <input type="number" id="misto-dinheiro" class="campo-cliente" placeholder="Valor no Dinheiro" oninput="atualizarTotalComTaxa()">
+    <input type="number" id="misto-debito" class="campo-cliente" placeholder="Valor no Débito" oninput="atualizarTotalComTaxa()">
+    <input type="number" id="misto-credito" class="campo-cliente" placeholder="Valor no Crédito 1x" oninput="atualizarTotalComTaxa()">
+</div>
+
+<div id="div-parcelas" style="display: none;">
+    <label>Número de Parcelas</label>
     <select id="parcelas" class="campo-cliente" onchange="atualizarTotalComTaxa()">
         <option value="Crédito 1x">1x (Taxa 5.99%)</option>
         <option value="Crédito 2x">2x (Taxa 11.39%)</option>
@@ -216,29 +225,52 @@
         atualizarTotalComTaxa();
     }
 
-    function gerenciarCamposExtras() {
-        const pag = document.getElementById('pagamento').value;
-        const divTroco = document.getElementById('div-troco');
-        const divParcelas = document.getElementById('div-parcelas');
+  function gerenciarCamposExtras() {
+    const pag = document.getElementById('pagamento').value;
+    document.getElementById('div-troco').style.display = (pag === "Dinheiro") ? "block" : "none";
+    document.getElementById('div-parcelas').style.display = (pag === "Crédito") ? "block" : "none";
+    document.getElementById('div-misto').style.display = (pag === "Misto") ? "block" : "none";
+    atualizarTotalComTaxa();
+}
 
-        // Mostra/Esconde Troco
-        divTroco.style.display = (pag === "Dinheiro") ? "block" : "none";
+function atualizarTotalComTaxa() {
+    const pag = document.getElementById('pagamento').value;
+    let totalFinal = 0;
+    let detalheMisto = "";
+
+    if (pag === "Misto") {
+        // Pega valores digitados ou 0 se estiver vazio
+        const vPix = parseFloat(document.getElementById('misto-pix').value) || 0;
+        const vDin = parseFloat(document.getElementById('misto-dinheiro').value) || 0;
+        const vDeb = parseFloat(document.getElementById('misto-debito').value) || 0;
+        const vCre = parseFloat(document.getElementById('misto-credito').value) || 0;
+
+        // Aplica taxas individuais em cada parte
+        const tPix = vPix;
+        const tDin = vDin;
+        const tDeb = vDeb * (1 + TAXAS["Débito"]);
+        const tCre = vCre * (1 + TAXAS["Crédito 1x"]);
+
+        totalFinal = tPix + tDin + tDeb + tCre;
+        detalheMisto = `Pix: R$${vPix} | Din: R$${vDin} | Déb: R$${tDeb.toFixed(2)} | Créd: R$${tCre.toFixed(2)}`;
         
-        // Mostra/Esconde Parcelamento
-        divParcelas.style.display = (pag === "Crédito") ? "block" : "none";
-
-        atualizarTotalComTaxa();
+        // Alerta se o valor total misto for menor que o total do carrinho
+        if (vPix + vDin + vDeb + vCre < totalBase && (vPix + vDin + vDeb + vCre) > 0) {
+            document.getElementById('total-val').style.color = "red";
+        } else {
+            document.getElementById('total-val').style.color = "#ffcc00";
+        }
+    } else {
+        const parcelas = document.getElementById('parcelas').value;
+        let chaveTaxa = (pag === "Crédito") ? parcelas : pag;
+        const percentual = TAXAS[chaveTaxa] || 0;
+        totalFinal = totalBase * (1 + percentual);
+        document.getElementById('total-val').style.color = "#ffcc00";
     }
 
-    function atualizarTotalComTaxa() {
-        const pag = document.getElementById('pagamento').value;
-        const parcelas = document.getElementById('parcelas').value;
-        
-        // Se estiver em Crédito, usa a taxa da parcela selecionada, senão usa a taxa do pagamento fixo
-        let chaveTaxa = (pag === "Crédito") ? parcelas : pag;
-
-        const percentual = TAXAS[chaveTaxa] || 0;
-        const totalFinal = totalBase * (1 + percentual);
+    document.getElementById('total-val').innerText = totalFinal.toFixed(2).replace('.', ',');
+    return { totalFinal, detalheMisto };
+}
 
         document.getElementById('total-val').innerText = totalFinal.toFixed(2).replace('.', ',');
         return { totalFinal, modalidade: chaveTaxa };
