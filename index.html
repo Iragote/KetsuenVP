@@ -161,21 +161,28 @@
         <input type="text" id="end-cli" class="campo-cliente" placeholder="Endereço de Entrega">
         <input type="tel" id="tel-cli" class="campo-cliente" placeholder="Seu Telefone (DDD)">
         
-        <label>Forma de Pagamento</label>
-<select id="pagamento" class="campo-cliente" onchange="atualizarTotalComTaxa()">
+<label>Forma de Pagamento</label>
+<select id="pagamento" class="campo-cliente" onchange="gerenciarCamposExtras()">
     <option value="Pix">Pix</option>
     <option value="Dinheiro">Dinheiro</option>
     <option value="Débito">Cartão de Débito (Taxa 2.79%)</option>
-    <option value="Crédito 1x">Crédito 1x (Taxa 5.99%)</option>
-    <option value="Crédito 2x">Crédito 2x (Taxa 11.39%)</option>
-    <option value="Crédito 3x">Crédito 3x (Taxa 12.49%)</option>
-    <option value="Crédito 4x">Crédito 4x (Taxa 13.09%)</option>
-    <option value="Crédito 5x">Crédito 5x (Taxa 13.79%)</option>
+    <option value="Crédito">Cartão de Crédito (Parcelado)</option>
 </select>
 
-        <div id="div-troco" style="display: none;">
-            <input type="text" id="troco-cli" class="campo-cliente" placeholder="Troco para quanto?">
-        </div>
+<div id="div-parcelas" style="display: none;">
+    <label>Número de Parcelas</label>
+    <select id="parcelas" class="campo-cliente" onchange="atualizarTotalComTaxa()">
+        <option value="Crédito 1x">1x (Taxa 5.99%)</option>
+        <option value="Crédito 2x">2x (Taxa 11.39%)</option>
+        <option value="Crédito 3x">3x (Taxa 12.49%)</option>
+        <option value="Crédito 4x">4x (Taxa 13.09%)</option>
+        <option value="Crédito 5x">5x (Taxa 13.79%)</option>
+    </select>
+</div>
+
+<div id="div-troco" style="display: none;">
+    <input type="text" id="troco-cli" class="campo-cliente" placeholder="Troco para quanto?">
+</div>
 
         <button id="btn-enviar" onclick="enviar()">Pedir no WhatsApp 📲</button>
     </div>
@@ -185,56 +192,61 @@
     let cart = [];
     let totalBase = 0;
 
-    // Configuração das taxas InfinitePay informadas
+    // Tabela de taxas centralizada
     const TAXAS = {
+        "Pix": 0,
+        "Dinheiro": 0,
         "Débito": 0.0279,
         "Crédito 1x": 0.0599,
         "Crédito 2x": 0.1139,
         "Crédito 3x": 0.1249,
         "Crédito 4x": 0.1309,
-        "Crédito 5x": 0.1379,
-        "Pix": 0,
-        "Dinheiro": 0
+        "Crédito 5x": 0.1379
     };
 
-    function abrirPagina(id) {
-        document.querySelectorAll('.menu-page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        if(event) event.currentTarget.classList.add('active');
-    }
+    // Função que decide o que mostrar (Troco ou Parcelas)
+    function gerenciarCamposExtras() {
+        const pag = document.getElementById('pagamento').value;
+        const divTroco = document.getElementById('div-troco');
+        const divParcelas = document.getElementById('div-parcelas');
 
-    function add(n, p) {
-        cart.push({ n, p });
-        totalBase += p;
-        document.getElementById('lista-carrinho').innerHTML = cart.map(i => `• ${i.n} (R$ ${i.p.toFixed(2)})`).join('<br>');
+        // Lógica de visibilidade
+        divTroco.style.display = (pag === "Dinheiro") ? "block" : "none";
+        divParcelas.style.display = (pag === "Crédito") ? "block" : "none";
+
         atualizarTotalComTaxa();
     }
 
     function atualizarTotalComTaxa() {
         const pag = document.getElementById('pagamento').value;
-        const divTroco = document.getElementById('div-troco');
+        const parcelas = document.getElementById('parcelas').value;
         
-        // Exibe troco apenas se for dinheiro
-        divTroco.style.display = (pag === "Dinheiro") ? "block" : "none";
+        let chaveTaxa = pag;
+        
+        // Se for crédito, a taxa vem do seletor de parcelas
+        if (pag === "Crédito") {
+            chaveTaxa = parcelas;
+        }
 
-        // Cálculo da taxa
-        const percentualTaxa = TAXAS[pag] || 0;
-        const totalFinal = totalBase * (1 + percentualTaxa);
+        const percentual = TAXAS[chaveTaxa] || 0;
+        const totalFinal = totalBase * (1 + percentual);
 
-        document.getElementById('total-val').innerText = totalFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        return totalFinal;
+        document.getElementById('total-val').innerText = totalFinal.toFixed(2).replace('.', ',');
+        return { totalFinal, modalidade: chaveTaxa };
     }
 
+    // Na função enviar(), mude a parte do pagamento para:
     function enviar() {
         if (cart.length === 0) return alert("Carrinho vazio!");
         
+        const infoFinal = atualizarTotalComTaxa();
+        const totalComTaxa = infoFinal.totalFinal;
+        const modalidadePag = infoFinal.modalidade;
+
         const nome = document.getElementById('nome-cli').value;
         const end = document.getElementById('end-cli').value;
         const tel = document.getElementById('tel-cli').value;
-        const pag = document.getElementById('pagamento').value;
         const troco = document.getElementById('troco-cli').value;
-        const totalComTaxa = atualizarTotalComTaxa();
 
         if (!nome || !end || !tel) return alert("Preencha seus dados!");
 
@@ -244,16 +256,14 @@
         
         msg += `\n\n*Subtotal:* R$ ${totalBase.toFixed(2)}`;
         
-        // Se houver taxa, mostra o valor extra
-        if (TAXAS[pag] > 0) {
-            const valorTaxa = totalComTaxa - totalBase;
-            msg += `\n*Taxa de Cartão (${pag}):* R$ ${valorTaxa.toFixed(2)}`;
+        if (TAXAS[modalidadePag] > 0) {
+            msg += `\n*Taxa (${modalidadePag}):* R$ ${(totalComTaxa - totalBase).toFixed(2)}`;
         }
         
-        msg += `\n*TOTAL FINAL: R$ ${totalComTaxa.toFixed(2)}*`;
-        msg += `\n\n*Pagamento:* ${pag}`;
+        msg += `\n*TOTAL A PAGAR: R$ ${totalComTaxa.toFixed(2)}*`;
+        msg += `\n\n*Forma de Pagamento:* ${modalidadePag}`;
         
-        if (pag === "Dinheiro" && troco) {
+        if (modalidadePag === "Dinheiro" && troco) {
             msg += `\n*Troco para:* R$ ${troco}`;
         }
 
