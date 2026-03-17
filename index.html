@@ -7,32 +7,25 @@
     <title>Ketsuen VP - Cardápio Completo</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Montserrat', sans-serif; background-color: #000; color: #ffcc00; margin: 0; padding: 10px; }
+       body { font-family: 'Montserrat', sans-serif; background-color: #000; color: #ffcc00; margin: 0; padding: 10px; }
         .container { max-width: 600px; margin: auto; border: 2px solid #e60000; border-radius: 15px; padding: 15px; background: #0a0a0a; }
-        
         h1, h3, .tab-btn, .preco, #btn-enviar { font-family: 'Oswald', sans-serif; text-transform: uppercase; }
-        
         h1 { color: #e60000; text-align: center; margin-bottom: 5px; letter-spacing: 1px; }
         .subtitle { text-align: center; color: #fff; font-size: 0.9rem; margin-bottom: 20px; font-weight: bold; }
-        
         .tabs { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 20px; position: sticky; top: 0; background: #0a0a0a; padding: 10px 0; z-index: 10; }
         .tab-btn { background: #222; color: #fff; border: 1px solid #e60000; padding: 10px; border-radius: 5px; cursor: pointer; flex: 1 1 30%; font-weight: bold; font-size: 0.75rem; }
         .tab-btn.active { background: #e60000; color: #fff; }
-        
         .menu-page { display: none; }
         .menu-page.active { display: block; }
-        
         .item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding: 12px 0; }
-        
         .preco { color: #ffcc00; font-weight: bold; margin-right: 10px; font-size: 0.9rem; }
         button.add-btn { background: #e60000; color: white; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        
         .header-combo { display: flex; align-items: center; gap: 15px; margin-top: 20px; border-bottom: 2px solid #e60000; padding-bottom: 5px; }
         .header-combo img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #ffcc00; }
-
         .carrinho-fixo { background: #111; padding: 15px; border: 2px solid #e60000; border-radius: 10px; margin-top: 30px; }
         .campo-cliente { width: 100%; padding: 10px; margin: 5px 0 10px 0; background: #222; border: 1px solid #ffcc00; color: #fff; border-radius: 5px; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
         #btn-enviar { width: 100%; background: #25d366; color: #fff; padding: 15px; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .label-misto { font-size: 0.75rem; color: #e60000; margin-top: 5px; display: block; }
     </style>
 </head>
 <body>
@@ -161,37 +154,39 @@
         <input type="text" id="end-cli" class="campo-cliente" placeholder="Endereço de Entrega">
         <input type="tel" id="tel-cli" class="campo-cliente" placeholder="Seu Telefone (DDD)">
         
-<label>Forma de Pagamento</label>
-<select id="pagamento" class="campo-cliente" onchange="gerenciarCamposExtras()">
-    <option value="Pix">Pix</option>
-    <option value="Dinheiro">Dinheiro</option>
-    <option value="Débito">Cartão de Débito (Taxa 2.79%)</option>
-    <option value="Crédito">Cartão de Crédito (Parcelado)</option>
-    <option value="Misto">Pagamento Misto (Várias formas)</option>
-</select>
+        <label>Forma de Pagamento</label>
+        <select id="pagamento" class="campo-cliente" onchange="gerenciarCamposExtras()">
+            <option value="Pix">Pix</option>
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="Débito">Cartão de Débito (2.79%)</option>
+            <option value="Crédito">Cartão de Crédito (Ver parcelas)</option>
+            <option value="Misto">Pagamento Misto (Várias formas)</option>
+        </select>
 
-<div id="div-misto" style="display: none; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #ffcc00; margin-top: 10px;">
-    <p style="font-size: 0.8rem; color: #fff; margin-bottom: 10px;">Informe quanto pagará em cada opção:</p>
-    <input type="number" id="misto-pix" class="campo-cliente" placeholder="Valor no Pix" oninput="atualizarTotalComTaxa()">
-    <input type="number" id="misto-dinheiro" class="campo-cliente" placeholder="Valor no Dinheiro" oninput="atualizarTotalComTaxa()">
-    <input type="number" id="misto-debito" class="campo-cliente" placeholder="Valor no Débito" oninput="atualizarTotalComTaxa()">
-    <input type="number" id="misto-credito" class="campo-cliente" placeholder="Valor no Crédito 1x" oninput="atualizarTotalComTaxa()">
-</div>
+        <div id="div-misto" style="display: none; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #ffcc00; margin-bottom: 10px;">
+            <span class="label-misto">Quanto em Dinheiro/Pix?</span>
+            <input type="number" id="m-especie" class="campo-cliente" placeholder="R$ 0,00" oninput="atualizarTotalComTaxa()">
+            <span class="label-misto">Quanto no Débito? (Taxa 2.79% incide aqui)</span>
+            <input type="number" id="m-debito" class="campo-cliente" placeholder="R$ 0,00" oninput="atualizarTotalComTaxa()">
+            <span class="label-misto">Quanto no Crédito 1x? (Taxa 5.99% incide aqui)</span>
+            <input type="number" id="m-credito" class="campo-cliente" placeholder="R$ 0,00" oninput="atualizarTotalComTaxa()">
+        </div>
 
-<div id="div-parcelas" style="display: none;">
-    <label>Número de Parcelas</label>
-    <select id="parcelas" class="campo-cliente" onchange="atualizarTotalComTaxa()">
-        <option value="Crédito 1x">1x (Taxa 5.99%)</option>
-        <option value="Crédito 2x">2x (Taxa 11.39%)</option>
-        <option value="Crédito 3x">3x (Taxa 12.49%)</option>
-        <option value="Crédito 4x">4x (Taxa 13.09%)</option>
-        <option value="Crédito 5x">5x (Taxa 13.79%)</option>
-    </select>
-</div>
+        <div id="div-parcelas" style="display: none; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px dashed #e60000; margin-bottom: 10px;">
+            <label style="margin-top: 0;">Selecione o Parcelamento:</label>
+            <select id="parcelas" class="campo-cliente" onchange="atualizarTotalComTaxa()">
+                <option value="Crédito 1x">1x (Taxa 5.99%)</option>
+                <option value="Crédito 2x">2x (Taxa 11.39%)</option>
+                <option value="Crédito 3x">3x (Taxa 12.49%)</option>
+                <option value="Crédito 4x">4x (Taxa 13.09%)</option>
+                <option value="Crédito 5x">5x (Taxa 13.79%)</option>
+            </select>
+        </div>
 
-<div id="div-troco" style="display: none;">
-    <input type="text" id="troco-cli" class="campo-cliente" placeholder="Troco para quanto?">
-</div>
+        <div id="div-troco" style="display: none;">
+            <input type="text" id="troco-cli" class="campo-cliente" placeholder="Troco para quanto?">
+        </div>
+
         <button id="btn-enviar" onclick="enviar()">Pedir no WhatsApp 📲</button>
     </div>
 </div>
@@ -201,14 +196,9 @@
     let totalBase = 0;
 
     const TAXAS = {
-        "Pix": 0,
-        "Dinheiro": 0,
-        "Débito": 0.0279,
-        "Crédito 1x": 0.0599,
-        "Crédito 2x": 0.1139,
-        "Crédito 3x": 0.1249,
-        "Crédito 4x": 0.1309,
-        "Crédito 5x": 0.1379
+        "Pix": 0, "Dinheiro": 0, "Débito": 0.0279,
+        "Crédito 1x": 0.0599, "Crédito 2x": 0.1139,
+        "Crédito 3x": 0.1249, "Crédito 4x": 0.1309, "Crédito 5x": 0.1379
     };
 
     function abrirPagina(id) {
@@ -225,84 +215,67 @@
         atualizarTotalComTaxa();
     }
 
-  function gerenciarCamposExtras() {
-    const pag = document.getElementById('pagamento').value;
-    document.getElementById('div-troco').style.display = (pag === "Dinheiro") ? "block" : "none";
-    document.getElementById('div-parcelas').style.display = (pag === "Crédito") ? "block" : "none";
-    document.getElementById('div-misto').style.display = (pag === "Misto") ? "block" : "none";
-    atualizarTotalComTaxa();
-}
-
-function atualizarTotalComTaxa() {
-    const pag = document.getElementById('pagamento').value;
-    let totalFinal = 0;
-    let detalheMisto = "";
-
-    if (pag === "Misto") {
-        // Pega valores digitados ou 0 se estiver vazio
-        const vPix = parseFloat(document.getElementById('misto-pix').value) || 0;
-        const vDin = parseFloat(document.getElementById('misto-dinheiro').value) || 0;
-        const vDeb = parseFloat(document.getElementById('misto-debito').value) || 0;
-        const vCre = parseFloat(document.getElementById('misto-credito').value) || 0;
-
-        // Aplica taxas individuais em cada parte
-        const tPix = vPix;
-        const tDin = vDin;
-        const tDeb = vDeb * (1 + TAXAS["Débito"]);
-        const tCre = vCre * (1 + TAXAS["Crédito 1x"]);
-
-        totalFinal = tPix + tDin + tDeb + tCre;
-        detalheMisto = `Pix: R$${vPix} | Din: R$${vDin} | Déb: R$${tDeb.toFixed(2)} | Créd: R$${tCre.toFixed(2)}`;
-        
-        // Alerta se o valor total misto for menor que o total do carrinho
-        if (vPix + vDin + vDeb + vCre < totalBase && (vPix + vDin + vDeb + vCre) > 0) {
-            document.getElementById('total-val').style.color = "red";
-        } else {
-            document.getElementById('total-val').style.color = "#ffcc00";
-        }
-    } else {
-        const parcelas = document.getElementById('parcelas').value;
-        let chaveTaxa = (pag === "Crédito") ? parcelas : pag;
-        const percentual = TAXAS[chaveTaxa] || 0;
-        totalFinal = totalBase * (1 + percentual);
-        document.getElementById('total-val').style.color = "#ffcc00";
+    function gerenciarCamposExtras() {
+        const pag = document.getElementById('pagamento').value;
+        document.getElementById('div-troco').style.display = (pag === "Dinheiro") ? "block" : "none";
+        document.getElementById('div-parcelas').style.display = (pag === "Crédito") ? "block" : "none";
+        document.getElementById('div-misto').style.display = (pag === "Misto") ? "block" : "none";
+        atualizarTotalComTaxa();
     }
 
-    document.getElementById('total-val').innerText = totalFinal.toFixed(2).replace('.', ',');
-    return { totalFinal, detalheMisto };
-}
+    function atualizarTotalComTaxa() {
+        const pag = document.getElementById('pagamento').value;
+        let totalFinal = 0;
+
+        if (pag === "Misto") {
+            const vEsp = parseFloat(document.getElementById('m-especie').value) || 0;
+            const vDeb = parseFloat(document.getElementById('m-debito').value) || 0;
+            const vCre = parseFloat(document.getElementById('m-credito').value) || 0;
+            
+            // Soma os valores aplicando a taxa só na parte do cartão
+            totalFinal = vEsp + (vDeb * (1 + TAXAS["Débito"])) + (vCre * (1 + TAXAS["Crédito 1x"]));
+        } else {
+            const parcelas = document.getElementById('parcelas').value;
+            let chaveTaxa = (pag === "Crédito") ? parcelas : pag;
+            totalFinal = totalBase * (1 + (TAXAS[chaveTaxa] || 0));
+        }
 
         document.getElementById('total-val').innerText = totalFinal.toFixed(2).replace('.', ',');
-        return { totalFinal, modalidade: chaveTaxa };
+        return totalFinal;
     }
 
     function enviar() {
         if (cart.length === 0) return alert("Carrinho vazio!");
-        
-        const info = atualizarTotalComTaxa();
+        const pag = document.getElementById('pagamento').value;
+        const totalComTaxas = atualizarTotalComTaxa();
         const nome = document.getElementById('nome-cli').value;
         const end = document.getElementById('end-cli').value;
         const tel = document.getElementById('tel-cli').value;
-        const troco = document.getElementById('troco-cli').value;
 
         if (!nome || !end || !tel) return alert("Preencha seus dados!");
 
         let msg = `*PEDIDO KETSUEN VP*\n\n`;
-        msg += cart.map(i => `• ${i.n} - R$ ${i.p.toFixed(2)}`).join('\n');
+        msg += cart.map(i => `• ${i.n}`).join('\n');
         msg += `\n\n*Subtotal:* R$ ${totalBase.toFixed(2)}`;
         
-        if (TAXAS[info.modalidade] > 0) {
-            const valorTaxa = info.totalFinal - totalBase;
-            msg += `\n*Taxa (${info.modalidade}):* R$ ${valorTaxa.toFixed(2)}`;
+        if (pag === "Misto") {
+            const vEsp = document.getElementById('m-especie').value || 0;
+            const vDeb = document.getElementById('m-debito').value || 0;
+            const vCre = document.getElementById('m-credito').value || 0;
+            msg += `\n\n*PAGAMENTO MISTO:*`;
+            msg += `\n- Espécie/Pix: R$ ${vEsp}`;
+            msg += `\n- Débito (+taxa): R$ ${vDeb}`;
+            msg += `\n- Crédito 1x (+taxa): R$ ${vCre}`;
+        } else {
+            const mod = (pag === "Crédito") ? document.getElementById('parcelas').value : pag;
+            msg += `\n*Pagamento:* ${mod}`;
         }
-        
-        msg += `\n*TOTAL A PAGAR: R$ ${info.totalFinal.toFixed(2)}*`;
-        msg += `\n\n*Forma de Pagamento:* ${info.modalidade}`;
-        
-        if (info.modalidade === "Dinheiro" && troco) msg += `\n*Troco para:* R$ ${troco}`;
 
+        msg += `\n*TOTAL A PAGAR: R$ ${totalComTaxas.toFixed(2)}*`;
         msg += `\n\n*CLIENTE:* ${nome}\n*ENDEREÇO:* ${end}\n*CONTATO:* ${tel}`;
 
         window.open(`https://wa.me/558183418003?text=${encodeURIComponent(msg)}`);
     }
 </script>
+</body>
+</html>
