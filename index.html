@@ -162,11 +162,16 @@
         <input type="tel" id="tel-cli" class="campo-cliente" placeholder="Seu Telefone (DDD)">
         
         <label>Forma de Pagamento</label>
-        <select id="pagamento" class="campo-cliente" onchange="verificarTroco()">
-            <option value="Pix">Pix</option>
-            <option value="Cartão">Cartão<option>
-            <option value="Dinheiro">Dinheiro</option>
-        </select>
+<select id="pagamento" class="campo-cliente" onchange="atualizarTotalComTaxa()">
+    <option value="Pix">Pix</option>
+    <option value="Dinheiro">Dinheiro</option>
+    <option value="Débito">Cartão de Débito (Taxa 2.79%)</option>
+    <option value="Crédito 1x">Crédito 1x (Taxa 5.99%)</option>
+    <option value="Crédito 2x">Crédito 2x (Taxa 11.39%)</option>
+    <option value="Crédito 3x">Crédito 3x (Taxa 12.49%)</option>
+    <option value="Crédito 4x">Crédito 4x (Taxa 13.09%)</option>
+    <option value="Crédito 5x">Crédito 5x (Taxa 13.79%)</option>
+</select>
 
         <div id="div-troco" style="display: none;">
             <input type="text" id="troco-cli" class="campo-cliente" placeholder="Troco para quanto?">
@@ -178,26 +183,47 @@
 
 <script>
     let cart = [];
-    let total = 0;
+    let totalBase = 0;
+
+    // Configuração das taxas InfinitePay informadas
+    const TAXAS = {
+        "Débito": 0.0279,
+        "Crédito 1x": 0.0599,
+        "Crédito 2x": 0.1139,
+        "Crédito 3x": 0.1249,
+        "Crédito 4x": 0.1309,
+        "Crédito 5x": 0.1379,
+        "Pix": 0,
+        "Dinheiro": 0
+    };
 
     function abrirPagina(id) {
         document.querySelectorAll('.menu-page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(id).classList.add('active');
-        event.currentTarget.classList.add('active');
+        if(event) event.currentTarget.classList.add('active');
     }
 
     function add(n, p) {
         cart.push({ n, p });
-        total += p;
+        totalBase += p;
         document.getElementById('lista-carrinho').innerHTML = cart.map(i => `• ${i.n} (R$ ${i.p.toFixed(2)})`).join('<br>');
-        document.getElementById('total-val').innerText = total.toFixed(2);
+        atualizarTotalComTaxa();
     }
 
-    function verificarTroco() {
+    function atualizarTotalComTaxa() {
         const pag = document.getElementById('pagamento').value;
         const divTroco = document.getElementById('div-troco');
+        
+        // Exibe troco apenas se for dinheiro
         divTroco.style.display = (pag === "Dinheiro") ? "block" : "none";
+
+        // Cálculo da taxa
+        const percentualTaxa = TAXAS[pag] || 0;
+        const totalFinal = totalBase * (1 + percentualTaxa);
+
+        document.getElementById('total-val').innerText = totalFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return totalFinal;
     }
 
     function enviar() {
@@ -208,13 +234,23 @@
         const tel = document.getElementById('tel-cli').value;
         const pag = document.getElementById('pagamento').value;
         const troco = document.getElementById('troco-cli').value;
+        const totalComTaxa = atualizarTotalComTaxa();
 
         if (!nome || !end || !tel) return alert("Preencha seus dados!");
 
         const fone = "558183418003";
         let msg = `*PEDIDO KETSUEN VP*\n\n`;
         msg += cart.map(i => `• ${i.n} - R$ ${i.p.toFixed(2)}`).join('\n');
-        msg += `\n\n*Total: R$ ${total.toFixed(2)}*`;
+        
+        msg += `\n\n*Subtotal:* R$ ${totalBase.toFixed(2)}`;
+        
+        // Se houver taxa, mostra o valor extra
+        if (TAXAS[pag] > 0) {
+            const valorTaxa = totalComTaxa - totalBase;
+            msg += `\n*Taxa de Cartão (${pag}):* R$ ${valorTaxa.toFixed(2)}`;
+        }
+        
+        msg += `\n*TOTAL FINAL: R$ ${totalComTaxa.toFixed(2)}*`;
         msg += `\n\n*Pagamento:* ${pag}`;
         
         if (pag === "Dinheiro" && troco) {
@@ -228,8 +264,3 @@
         window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`);
     }
 </script>
-</body>
-
-</html>
-
-
