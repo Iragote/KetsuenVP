@@ -164,7 +164,7 @@
         <label>Forma de Pagamento</label>
         <select id="pagamento" class="campo-cliente" onchange="verificarTroco()">
             <option value="Pix">Pix</option>
-            
+            <option value="Cartão">Cartão<option>
             <option value="Dinheiro">Dinheiro</option>
         </select>
 
@@ -211,7 +211,7 @@
 
         if (!nome || !end || !tel) return alert("Preencha seus dados!");
 
-        const fone = "558197672202";
+        const fone = "558183418003";
         let msg = `*PEDIDO KETSUEN VP*\n\n`;
         msg += cart.map(i => `• ${i.n} - R$ ${i.p.toFixed(2)}`).join('\n');
         msg += `\n\n*Total: R$ ${total.toFixed(2)}*`;
