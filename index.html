@@ -26,6 +26,55 @@
         .campo-cliente { width: 100%; padding: 10px; margin: 5px 0 10px 0; background: #222; border: 1px solid #ffcc00; color: #fff; border-radius: 5px; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
         #btn-enviar { width: 100%; background: #25d366; color: #fff; padding: 15px; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .label-misto { font-size: 0.75rem; color: #e60000; margin-top: 5px; display: block; }
+		#div-misto {
+    background: #151515 !important;
+    border: 1px solid #333 !important;
+    padding: 15px !important;
+    margin-top: 10px;
+}
+
+.misto-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dois campos por linha */
+    gap: 10px;
+}
+
+.misto-card {
+    background: #222;
+    padding: 8px;
+    border-radius: 8px;
+    border-left: 4px solid #e60000; /* Detalhe vermelho lateral */
+}
+
+.misto-card label {
+    font-size: 0.65rem !important;
+    color: #bbb !important;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.misto-card input {
+    margin: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #fff;
+    padding: 5px 0 !important;
+}
+
+/* Barra de progresso do valor */
+#status-misto {
+    font-size: 0.75rem;
+    margin-bottom: 10px;
+    padding: 5px;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: bold;
+}
+.valor-ok { background: #1b4332; color: #74c69d; }
+.valor-falta { background: #431b1b; color: #ff8a8a; }
     </style>
 </head>
 <body>
@@ -163,14 +212,26 @@
             <option value="Misto">Pagamento Misto (Várias formas)</option>
         </select>
 
-        <div id="div-misto" style="display: none; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #ffcc00; margin-bottom: 10px;">
-            <span class="label-misto">Quanto em Dinheiro/Pix?</span>
-            <input type="number" id="m-especie" class="campo-cliente" placeholder="R$ 0,00" oninput="atualizarTotalComTaxa()">
-            <span class="label-misto">Quanto no Débito? (Taxa 2.79% incide aqui)</span>
-            <input type="number" id="m-debito" class="campo-cliente" placeholder="R$ 0,00" oninput="atualizarTotalComTaxa()">
-            <span class="label-misto">Quanto no Crédito 1x? (Taxa 5.99% incide aqui)</span>
-            <input type="number" id="m-credito" class="campo-cliente" placeholder="R$ 0,00" oninput="atualizarTotalComTaxa()">
+<div id="div-misto" style="display: none; border-radius: 12px; margin-bottom: 15px;">
+    <div id="status-misto" class="valor-falta">Soma atual: R$ 0,00</div>
+    
+    <div class="misto-grid">
+        <div class="misto-card" style="border-left-color: #25d366;">
+            <label>💵 Dinheiro / Pix</label>
+            <input type="number" id="m-especie" placeholder="0,00" oninput="atualizarTotalComTaxa()">
         </div>
+
+        <div class="misto-card" style="border-left-color: #3498db;">
+            <label>💳 Débito</label>
+            <input type="number" id="m-debito" placeholder="0,00" oninput="atualizarTotalComTaxa()">
+        </div>
+
+        <div class="misto-card" style="grid-column: span 2; border-left-color: #f1c40f;">
+            <label>💳 Crédito 1x (Taxa 5.99%)</label>
+            <input type="number" id="m-credito" placeholder="0,00" oninput="atualizarTotalComTaxa()">
+        </div>
+    </div>
+</div>
 
         <div id="div-parcelas" style="display: none; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px dashed #e60000; margin-bottom: 10px;">
             <label style="margin-top: 0;">Selecione o Parcelamento:</label>
@@ -223,26 +284,39 @@
         atualizarTotalComTaxa();
     }
 
-    function atualizarTotalComTaxa() {
-        const pag = document.getElementById('pagamento').value;
-        let totalFinal = 0;
+  function atualizarTotalComTaxa() {
+    const pag = document.getElementById('pagamento').value;
+    let totalFinal = 0;
 
-        if (pag === "Misto") {
-            const vEsp = parseFloat(document.getElementById('m-especie').value) || 0;
-            const vDeb = parseFloat(document.getElementById('m-debito').value) || 0;
-            const vCre = parseFloat(document.getElementById('m-credito').value) || 0;
-            
-            // Soma os valores aplicando a taxa só na parte do cartão
-            totalFinal = vEsp + (vDeb * (1 + TAXAS["Débito"])) + (vCre * (1 + TAXAS["Crédito 1x"]));
+    if (pag === "Misto") {
+        const vEsp = parseFloat(document.getElementById('m-especie').value) || 0;
+        const vDeb = parseFloat(document.getElementById('m-debito').value) || 0;
+        const vCre = parseFloat(document.getElementById('m-credito').value) || 0;
+        
+        const somaDigitada = vEsp + vDeb + vCre;
+        const status = document.getElementById('status-misto');
+        
+        // Atualiza a barra de status
+        status.innerText = `Soma informada: R$ ${somaDigitada.toFixed(2)}`;
+        if (somaDigitada >= totalBase) {
+            status.className = "valor-ok";
+            status.innerText += " (Valor atingido! ✅)";
         } else {
-            const parcelas = document.getElementById('parcelas').value;
-            let chaveTaxa = (pag === "Crédito") ? parcelas : pag;
-            totalFinal = totalBase * (1 + (TAXAS[chaveTaxa] || 0));
+            status.className = "valor-falta";
+            status.innerText += ` (Faltam R$ ${(totalBase - somaDigitada).toFixed(2)})`;
         }
 
-        document.getElementById('total-val').innerText = totalFinal.toFixed(2).replace('.', ',');
-        return totalFinal;
+        // Calcula total real com as taxas da maquininha
+        totalFinal = vEsp + (vDeb * (1 + TAXAS["Débito"])) + (vCre * (1 + TAXAS["Crédito 1x"]));
+    } else {
+        const parcelas = document.getElementById('parcelas').value;
+        let chaveTaxa = (pag === "Crédito") ? parcelas : pag;
+        totalFinal = totalBase * (1 + (TAXAS[chaveTaxa] || 0));
     }
+
+    document.getElementById('total-val').innerText = totalFinal.toFixed(2).replace('.', ',');
+    return totalFinal;
+}
 
     function enviar() {
         if (cart.length === 0) return alert("Carrinho vazio!");
