@@ -166,11 +166,11 @@
     <option value="Pix">Pix</option>
     <option value="Dinheiro">Dinheiro</option>
     <option value="Débito">Cartão de Débito (Taxa 2.79%)</option>
-    <option value="Crédito">Cartão de Crédito (Parcelado)</option>
+    <option value="Crédito">Cartão de Crédito (Ver parcelas)</option>
 </select>
 
-<div id="div-parcelas" style="display: none;">
-    <label>Número de Parcelas</label>
+<div id="div-parcelas" style="display: none; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px dashed #e60000; margin-bottom: 10px;">
+    <label style="margin-top: 0;">Selecione o Parcelamento:</label>
     <select id="parcelas" class="campo-cliente" onchange="atualizarTotalComTaxa()">
         <option value="Crédito 1x">1x (Taxa 5.99%)</option>
         <option value="Crédito 2x">2x (Taxa 11.39%)</option>
@@ -183,7 +183,6 @@
 <div id="div-troco" style="display: none;">
     <input type="text" id="troco-cli" class="campo-cliente" placeholder="Troco para quanto?">
 </div>
-
         <button id="btn-enviar" onclick="enviar()">Pedir no WhatsApp 📲</button>
     </div>
 </div>
@@ -192,7 +191,6 @@
     let cart = [];
     let totalBase = 0;
 
-    // Tabela de taxas centralizada
     const TAXAS = {
         "Pix": 0,
         "Dinheiro": 0,
@@ -204,14 +202,29 @@
         "Crédito 5x": 0.1379
     };
 
-    // Função que decide o que mostrar (Troco ou Parcelas)
+    function abrirPagina(id) {
+        document.querySelectorAll('.menu-page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(event) event.currentTarget.classList.add('active');
+    }
+
+    function add(n, p) {
+        cart.push({ n, p });
+        totalBase += p;
+        document.getElementById('lista-carrinho').innerHTML = cart.map(i => `• ${i.n} (R$ ${i.p.toFixed(2)})`).join('<br>');
+        atualizarTotalComTaxa();
+    }
+
     function gerenciarCamposExtras() {
         const pag = document.getElementById('pagamento').value;
         const divTroco = document.getElementById('div-troco');
         const divParcelas = document.getElementById('div-parcelas');
 
-        // Lógica de visibilidade
+        // Mostra/Esconde Troco
         divTroco.style.display = (pag === "Dinheiro") ? "block" : "none";
+        
+        // Mostra/Esconde Parcelamento
         divParcelas.style.display = (pag === "Crédito") ? "block" : "none";
 
         atualizarTotalComTaxa();
@@ -221,12 +234,8 @@
         const pag = document.getElementById('pagamento').value;
         const parcelas = document.getElementById('parcelas').value;
         
-        let chaveTaxa = pag;
-        
-        // Se for crédito, a taxa vem do seletor de parcelas
-        if (pag === "Crédito") {
-            chaveTaxa = parcelas;
-        }
+        // Se estiver em Crédito, usa a taxa da parcela selecionada, senão usa a taxa do pagamento fixo
+        let chaveTaxa = (pag === "Crédito") ? parcelas : pag;
 
         const percentual = TAXAS[chaveTaxa] || 0;
         const totalFinal = totalBase * (1 + percentual);
@@ -235,14 +244,10 @@
         return { totalFinal, modalidade: chaveTaxa };
     }
 
-    // Na função enviar(), mude a parte do pagamento para:
     function enviar() {
         if (cart.length === 0) return alert("Carrinho vazio!");
         
-        const infoFinal = atualizarTotalComTaxa();
-        const totalComTaxa = infoFinal.totalFinal;
-        const modalidadePag = infoFinal.modalidade;
-
+        const info = atualizarTotalComTaxa();
         const nome = document.getElementById('nome-cli').value;
         const end = document.getElementById('end-cli').value;
         const tel = document.getElementById('tel-cli').value;
@@ -250,27 +255,22 @@
 
         if (!nome || !end || !tel) return alert("Preencha seus dados!");
 
-        const fone = "558183418003";
         let msg = `*PEDIDO KETSUEN VP*\n\n`;
         msg += cart.map(i => `• ${i.n} - R$ ${i.p.toFixed(2)}`).join('\n');
-        
         msg += `\n\n*Subtotal:* R$ ${totalBase.toFixed(2)}`;
         
-        if (TAXAS[modalidadePag] > 0) {
-            msg += `\n*Taxa (${modalidadePag}):* R$ ${(totalComTaxa - totalBase).toFixed(2)}`;
+        if (TAXAS[info.modalidade] > 0) {
+            const valorTaxa = info.totalFinal - totalBase;
+            msg += `\n*Taxa (${info.modalidade}):* R$ ${valorTaxa.toFixed(2)}`;
         }
         
-        msg += `\n*TOTAL A PAGAR: R$ ${totalComTaxa.toFixed(2)}*`;
-        msg += `\n\n*Forma de Pagamento:* ${modalidadePag}`;
+        msg += `\n*TOTAL A PAGAR: R$ ${info.totalFinal.toFixed(2)}*`;
+        msg += `\n\n*Forma de Pagamento:* ${info.modalidade}`;
         
-        if (modalidadePag === "Dinheiro" && troco) {
-            msg += `\n*Troco para:* R$ ${troco}`;
-        }
+        if (info.modalidade === "Dinheiro" && troco) msg += `\n*Troco para:* R$ ${troco}`;
 
-        msg += `\n\n*CLIENTE:* ${nome}`;
-        msg += `\n*ENDEREÇO:* ${end}`;
-        msg += `\n*CONTATO:* ${tel}`;
+        msg += `\n\n*CLIENTE:* ${nome}\n*ENDEREÇO:* ${end}\n*CONTATO:* ${tel}`;
 
-        window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`);
+        window.open(`https://wa.me/558183418003?text=${encodeURIComponent(msg)}`);
     }
 </script>
