@@ -284,11 +284,35 @@
         if(event) event.currentTarget.classList.add('active');
     }
 
-    function add(n, p) {
+function add(n, p) {
         cart.push({ n, p });
         totalBase += p;
-        document.getElementById('lista-carrinho').innerHTML = cart.map(i => `• ${i.n} (R$ ${i.p.toFixed(2)})`).join('<br>');
+        renderCart(); // Desenha o carrinho com o botão remover
         atualizarTotalComTaxa();
+    }
+
+    function remove(index) {
+        totalBase -= cart[index].p; // Subtrai o valor do item removido
+        cart.splice(index, 1);      // Remove o item da lista
+        renderCart();               // Atualiza a visualização
+        atualizarTotalComTaxa();    // Recalcula taxas e total
+    }
+
+    function renderCart() {
+        const lista = document.getElementById('lista-carrinho');
+        
+        if (cart.length === 0) {
+            lista.innerHTML = "Carrinho vazio";
+            return;
+        }
+
+        // Gera o HTML de cada item com um botão de excluir (X)
+        lista.innerHTML = cart.map((item, index) => `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; background: #1a1a1a; padding: 5px 10px; border-radius: 5px; border-left: 3px solid #e60000;">
+                <span style="font-size: 0.85rem;">• ${item.n} (R$ ${item.p.toFixed(2)})</span>
+                <button onclick="remove(${index})" style="background: #e60000; color: white; border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-weight: bold; font-size: 0.7rem;">X</button>
+            </div>
+        `).join('');
     }
 
     function gerenciarCamposExtras() {
@@ -299,52 +323,59 @@
         atualizarTotalComTaxa();
     }
 
-  function atualizarTotalComTaxa() {
-    const pag = document.getElementById('pagamento').value;
-    let totalFinal = 0;
+    function atualizarTotalComTaxa() {
+        const pag = document.getElementById('pagamento').value;
+        let totalFinal = 0;
 
-    if (pag === "Misto") {
-        const vEsp = parseFloat(document.getElementById('m-especie').value) || 0;
-        const vDeb = parseFloat(document.getElementById('m-debito').value) || 0;
-        const vCre = parseFloat(document.getElementById('m-credito').value) || 0;
-        
-        const somaDigitada = vEsp + vDeb + vCre;
-        const status = document.getElementById('status-misto');
-        
-        // Atualiza a barra de status
-        status.innerText = `Soma informada: R$ ${somaDigitada.toFixed(2)}`;
-        if (somaDigitada >= totalBase) {
-            status.className = "valor-ok";
-            status.innerText += " (Valor atingido! ✅)";
+        if (pag === "Misto") {
+            const vEsp = parseFloat(document.getElementById('m-especie').value) || 0;
+            const vDeb = parseFloat(document.getElementById('m-debito').value) || 0;
+            const vCre = parseFloat(document.getElementById('m-credito').value) || 0;
+            
+            const somaDigitada = vEsp + vDeb + vCre;
+            const status = document.getElementById('status-misto');
+            
+            status.innerText = `Soma informada: R$ ${somaDigitada.toFixed(2)}`;
+            if (somaDigitada >= (totalBase - 0.01)) {
+                status.className = "valor-ok";
+                status.innerText += " (Valor atingido! ✅)";
+            } else {
+                status.className = "valor-falta";
+                status.innerText += ` (Faltam R$ ${(totalBase - somaDigitada).toFixed(2)})`;
+            }
+
+            totalFinal = vEsp + (vDeb * (1 + TAXAS["Débito"])) + (vCre * (1 + TAXAS["Crédito 1x"]));
         } else {
-            status.className = "valor-falta";
-            status.innerText += ` (Faltam R$ ${(totalBase - somaDigitada).toFixed(2)})`;
+            const parcelas = document.getElementById('parcelas').value;
+            let chaveTaxa = (pag === "Crédito") ? parcelas : pag;
+            totalFinal = totalBase * (1 + (TAXAS[chaveTaxa] || 0));
         }
 
-        // Calcula total real com as taxas da maquininha
-        totalFinal = vEsp + (vDeb * (1 + TAXAS["Débito"])) + (vCre * (1 + TAXAS["Crédito 1x"]));
-    } else {
-        const parcelas = document.getElementById('parcelas').value;
-        let chaveTaxa = (pag === "Crédito") ? parcelas : pag;
-        totalFinal = totalBase * (1 + (TAXAS[chaveTaxa] || 0));
+        document.getElementById('total-val').innerText = totalFinal.toFixed(2).replace('.', ',');
+        return totalFinal;
     }
 
-    document.getElementById('total-val').innerText = totalFinal.toFixed(2).replace('.', ',');
-    return totalFinal;
-}
+    function enviar() {
+        if (cart.length === 0) return alert("Carrinho vazio!");
+        
+        const pag = document.getElementById('pagamento').value;
+        const totalComTaxas = atualizarTotalComTaxa(); 
+        
+        const nome = document.getElementById('nome-cli').value;
+        const end = document.getElementById('end-cli').value;
+        const tel = document.getElementById('tel-cli').value;
 
-function enviar() {
-    if (cart.length === 0) return alert("Carrinho vazio!");
-    
-    const pag = document.getElementById('pagamento').value;
-    const info = atualizarTotalComTaxa(); // Agora retorna o totalFinal calculado
-    const totalComTaxas = info; 
-    
-    const nome = document.getElementById('nome-cli').value;
-    const end = document.getElementById('end-cli').value;
-    const tel = document.getElementById('tel-cli').value;
+        if (!nome || !end || !tel) return alert("Preencha seus dados de entrega!");
 
-    if (!nome || !end || !tel) return alert("Preencha seus dados de entrega!");
+        // Validação de segurança para pagamento misto
+        if (pag === "Misto") {
+            const vEsp = parseFloat(document.getElementById('m-especie').value) || 0;
+            const vDeb = parseFloat(document.getElementById('m-debito').value) || 0;
+            const vCre = parseFloat(document.getElementById('m-credito').value) || 0;
+            if ((vEsp + vDeb + vCre) < (totalBase - 0.01)) {
+                return alert("A soma dos valores informados é menor que o total do pedido!");
+            }
+        }
 
     // --- INÍCIO DA MENSAGEM ORGANIZADA ---
     let msg = `*🍱 NOVO PEDIDO - KETSUEN VP*\n`;
